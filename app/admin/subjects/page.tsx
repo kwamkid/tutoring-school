@@ -1,0 +1,256 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Pencil, Trash2, Plus, Search } from 'lucide-react'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+
+type Subject = {
+    id: string
+    name: string
+    description: string | null
+    created_at: string
+}
+
+export default function SubjectsPage() {
+    const [subjects, setSubjects] = useState<Subject[]>([])
+    const [loading, setLoading] = useState(true)
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const [currentSubject, setCurrentSubject] = useState<Subject | null>(null)
+    const [formData, setFormData] = useState({ name: '', description: '' })
+    const [searchTerm, setSearchTerm] = useState('')
+
+    const supabase = createClient()
+
+    useEffect(() => {
+        fetchSubjects()
+    }, [])
+
+    const fetchSubjects = async () => {
+        setLoading(true)
+        try {
+            const { data, error } = await supabase
+                .from('subjects')
+                .select('*')
+                .order('name')
+
+            if (error) throw error
+            setSubjects(data || [])
+        } catch (error) {
+            console.error('Error fetching subjects:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const openAddDialog = () => {
+        setIsEditing(false)
+        setCurrentSubject(null)
+        setFormData({ name: '', description: '' })
+        setIsDialogOpen(true)
+    }
+
+    const openEditDialog = (subject: Subject) => {
+        setIsEditing(true)
+        setCurrentSubject(subject)
+        setFormData({
+            name: subject.name,
+            description: subject.description || ''
+        })
+        setIsDialogOpen(true)
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+
+        try {
+            if (isEditing && currentSubject) {
+                const { error } = await supabase
+                    .from('subjects')
+                    .update({
+                        name: formData.name,
+                        description: formData.description
+                    })
+                    .eq('id', currentSubject.id)
+
+                if (error) throw error
+            } else {
+                const { error } = await supabase
+                    .from('subjects')
+                    .insert([{
+                        name: formData.name,
+                        description: formData.description
+                    }])
+
+                if (error) throw error
+            }
+
+            // Success
+            setIsDialogOpen(false)
+            fetchSubjects()
+        } catch (error) {
+            console.error('Error saving subject:', error)
+            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('คุณแน่ใจหรือไม่ที่จะลบวิชานี้? ข้อมูลที่เกี่ยวข้องอาจได้รับผลกระทบ')) return
+
+        try {
+            const { error } = await supabase
+                .from('subjects')
+                .delete()
+                .eq('id', id)
+
+            if (error) throw error
+            fetchSubjects()
+        } catch (error) {
+            console.error('Error deleting subject:', error)
+            alert('ไม่สามารถลบวิชาได้ (อาจมีการใช้งานอยู่)')
+        }
+    }
+
+    const filteredSubjects = subjects.filter(subject =>
+        subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (subject.description && subject.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-3xl font-bold text-primary">จัดการรายวิชา</h2>
+                <Button onClick={openAddDialog} className="shadow-md">
+                    <Plus className="h-4 w-4 mr-2" />
+                    เพิ่มรายวิชา
+                </Button>
+            </div>
+
+            {/* List Section */}
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <CardTitle>รายวิชาทั้งหมด ({subjects.length})</CardTitle>
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="ค้นหาวิชา..."
+                                className="pl-8"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ชื่อวิชา</TableHead>
+                                    <TableHead>รายละเอียด</TableHead>
+                                    <TableHead className="w-[100px] text-right">จัดการ</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredSubjects.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                            {loading ? 'กำลังโหลด...' : 'ไม่พบข้อมูลรายวิชา'}
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredSubjects.map((subject) => (
+                                        <TableRow key={subject.id}>
+                                            <TableCell className="font-medium">{subject.name}</TableCell>
+                                            <TableCell>{subject.description || '-'}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => openEditDialog(subject)}
+                                                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDelete(subject.id)}
+                                                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Dialog Form */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {isEditing ? 'แก้ไขรายวิชา' : 'เพิ่มรายวิชาใหม่'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            กรอกข้อมูลรายวิชาที่ต้องการ {isEditing ? 'แก้ไข' : 'เพิ่ม'} ลงในระบบ
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">ชื่อวิชา <span className="text-red-500">*</span></Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="เช่น คณิตศาสตร์, ภาษาอังกฤษ"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="description">รายละเอียด</Label>
+                            <Input
+                                id="description"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                                ยกเลิก
+                            </Button>
+                            <Button type="submit" disabled={loading}>
+                                {loading ? 'กำลังบันทึก...' : (isEditing ? 'บันทึกการแก้ไข' : 'เพิ่มรายวิชา')}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </div>
+    )
+}
