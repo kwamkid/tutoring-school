@@ -1,36 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  /* Warm Terracotta Theme */
+  /* Bright, Vibrant & Fun Theme */
   --font-sans: var(--font-ibm-plex-sans-thai);
 
-  --background: #ffffff;
+  --background: #FFF9F6;
   --foreground: #2C2C2C;
-  /* Softer black */
 
-  /* Terracotta Red Palette */
-  --primary: #E2725B;
-  /* Terracotta */
+  /* Brick Orange - Primary */
+  --primary: #F0743E;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #F4EFEA;
-  /* Warm off-white/beige */
-  --secondary-foreground: #5D4037;
-  /* Dark brown text for secondary */
+  /* Rosehip - Secondary */
+  --secondary: #FDF0EB;
+  --secondary-foreground: #8B4513;
 
-  --muted: #F5F5F5;
+  --muted: #F7F5F3;
   --muted-foreground: #737373;
 
-  --accent: #FFEDEA;
-  /* Very light terracotta for hovers */
-  --accent-foreground: #C04000;
+  /* Rosehip accent for hovers */
+  --accent: #FDF0EB;
+  --accent-foreground: #D4572A;
 
   --destructive: #ef4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #E5E5E5;
-  --input: #E5E5E5;
-  --ring: #E2725B;
+  --border: #F0EBE7;
+  --input: #F0EBE7;
+  --ring: #F0743E;
 
   --popover: #ffffff;
   --popover-foreground: #2C2C2C;
@@ -38,7 +35,7 @@
   --card: #ffffff;
   --card-foreground: #2C2C2C;
 
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 }
 
 @theme inline {
@@ -80,4 +77,5 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-ibm-plex-sans-thai), ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
 }

@@ -9,14 +9,14 @@ export default function AdminLayout({
     return (
         <div className="h-full relative">
             {/* Desktop Sidebar */}
-            <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-80 bg-gray-900">
+            <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-80">
                 <Sidebar />
             </div>
 
             {/* Main Content */}
             <main className="md:pl-72 pb-10">
                 {/* Mobile Header */}
-                <div className="flex items-center p-4 md:hidden border-b bg-white shadow-sm sticky top-0 z-50">
+                <div className="flex items-center p-4 md:hidden bg-white shadow-md sticky top-0 z-50">
                     <MobileSidebar />
                     <div className="font-bold text-lg ml-4 text-primary">Tutoring School</div>
                 </div>

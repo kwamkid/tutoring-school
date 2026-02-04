@@ -17,10 +17,23 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog"
 
+const SUBJECT_COLORS = [
+    { value: '#3B82F6', label: 'น้ำเงิน' },
+    { value: '#EF4444', label: 'แดง' },
+    { value: '#10B981', label: 'เขียว' },
+    { value: '#F59E0B', label: 'เหลือง' },
+    { value: '#8B5CF6', label: 'ม่วง' },
+    { value: '#EC4899', label: 'ชมพู' },
+    { value: '#06B6D4', label: 'ฟ้า' },
+    { value: '#F97316', label: 'ส้ม' },
+    { value: '#6B7280', label: 'เทา' },
+]
+
 type Subject = {
     id: string
     name: string
     description: string | null
+    color: string | null
     created_at: string
 }
 
@@ -30,7 +43,7 @@ export default function SubjectsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [currentSubject, setCurrentSubject] = useState<Subject | null>(null)
-    const [formData, setFormData] = useState({ name: '', description: '' })
+    const [formData, setFormData] = useState({ name: '', description: '', color: '#6B7280' })
     const [searchTerm, setSearchTerm] = useState('')
 
     const supabase = createClient()
@@ -59,7 +72,7 @@ export default function SubjectsPage() {
     const openAddDialog = () => {
         setIsEditing(false)
         setCurrentSubject(null)
-        setFormData({ name: '', description: '' })
+        setFormData({ name: '', description: '', color: '#6B7280' })
         setIsDialogOpen(true)
     }
 
@@ -68,7 +81,8 @@ export default function SubjectsPage() {
         setCurrentSubject(subject)
         setFormData({
             name: subject.name,
-            description: subject.description || ''
+            description: subject.description || '',
+            color: subject.color || '#6B7280'
         })
         setIsDialogOpen(true)
     }
@@ -83,7 +97,8 @@ export default function SubjectsPage() {
                     .from('subjects')
                     .update({
                         name: formData.name,
-                        description: formData.description
+                        description: formData.description,
+                        color: formData.color
                     })
                     .eq('id', currentSubject.id)
 
@@ -93,7 +108,8 @@ export default function SubjectsPage() {
                     .from('subjects')
                     .insert([{
                         name: formData.name,
-                        description: formData.description
+                        description: formData.description,
+                        color: formData.color
                     }])
 
                 if (error) throw error
@@ -159,7 +175,7 @@ export default function SubjectsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="rounded-md border">
+                    <div>
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -178,7 +194,15 @@ export default function SubjectsPage() {
                                 ) : (
                                     filteredSubjects.map((subject) => (
                                         <TableRow key={subject.id}>
-                                            <TableCell className="font-medium">{subject.name}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <span className="inline-flex items-center gap-2">
+                                                    <span
+                                                        className="inline-block h-3 w-3 rounded-full shrink-0"
+                                                        style={{ backgroundColor: subject.color || '#6B7280' }}
+                                                    />
+                                                    {subject.name}
+                                                </span>
+                                            </TableCell>
                                             <TableCell>{subject.description || '-'}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
@@ -239,6 +263,25 @@ export default function SubjectsPage() {
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>สีวิชา</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {SUBJECT_COLORS.map((c) => (
+                                    <button
+                                        key={c.value}
+                                        type="button"
+                                        title={c.label}
+                                        onClick={() => setFormData({ ...formData, color: c.value })}
+                                        className={`h-8 w-8 rounded-full border-2 transition-all ${
+                                            formData.color === c.value
+                                                ? 'border-gray-900 scale-110 ring-2 ring-offset-2 ring-gray-400'
+                                                : 'border-transparent hover:scale-105'
+                                        }`}
+                                        style={{ backgroundColor: c.value }}
+                                    />
+                                ))}
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>

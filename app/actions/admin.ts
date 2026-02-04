@@ -263,3 +263,70 @@ export async function updateParent(parentId: string, data: {
         return { success: false, message: error.message }
     }
 }
+
+export async function createStaff(formData: {
+    email: string
+    name: string
+    role: 'teacher' | 'admin'
+    password?: string
+}) {
+    const supabase = createAdminClient()
+
+    try {
+        const tempPassword = formData.password || Math.random().toString(36).slice(-8)
+
+        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+            email: formData.email,
+            password: tempPassword,
+            email_confirm: true,
+            user_metadata: {
+                full_name: formData.name,
+                role: formData.role
+            }
+        })
+
+        if (createError) throw createError
+        if (!newUser.user) throw new Error('Failed to create user')
+
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+                id: newUser.user.id,
+                full_name: formData.name,
+                role: formData.role
+            })
+
+        if (profileError) throw profileError
+
+        revalidatePath('/admin/users')
+
+        return {
+            success: true,
+            email: formData.email,
+            password: tempPassword,
+            message: `สร้างบัญชีสถานะ ${formData.role} สำเร็จ`
+        }
+
+    } catch (error: any) {
+        console.error('Create Staff Error:', error)
+        return {
+            success: false,
+            message: error.message || 'เกิดข้อผิดพลาดในการสร้างบัญชี'
+        }
+    }
+}
+
+export async function deleteStaff(userId: string) {
+    const supabase = createAdminClient()
+
+    try {
+        const { error } = await supabase.auth.admin.deleteUser(userId)
+        if (error) throw error
+
+        revalidatePath('/admin/users')
+        return { success: true }
+    } catch (error: any) {
+        console.error('Delete Staff Error:', error)
+        return { success: false, message: error.message }
+    }
+}

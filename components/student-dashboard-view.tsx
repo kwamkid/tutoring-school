@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { CreditCard, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 
@@ -28,19 +29,21 @@ export default function StudentDashboardView({ studentId, studentName }: Student
     const loadData = async () => {
         setLoading(true)
 
-        // Load credit balances
+        // Load credit balances with purchase -> package -> package_subjects -> subjects
         const { data: creditsData } = await supabase
             .from('credit_balances')
-            .select('*, subjects(*)')
+            .select('*, purchases(id, package_id, paid_at, packages(id, name, package_subjects(subject_id, subjects(name))))')
             .eq('student_id', studentId)
+            .gt('credits_remaining', 0)
 
         setCredits(creditsData || [])
 
-        // Load recent attendance
+        // Load recent attendance (only active)
         const { data: attendanceData } = await supabase
             .from('attendance')
             .select('*, subjects(*)')
             .eq('student_id', studentId)
+            .eq('status', 'active')
             .order('checked_at', { ascending: false })
             .limit(5)
 
@@ -53,6 +56,15 @@ export default function StudentDashboardView({ studentId, studentName }: Student
     }
 
     const totalCredits = credits.reduce((sum, c) => sum + c.credits_remaining, 0)
+
+    // Collect unique subjects from all credit pools
+    const subjectSet = new Set<string>()
+    credits.forEach((credit) => {
+        const packageSubjects = credit.purchases?.packages?.package_subjects || []
+        packageSubjects.forEach((ps: any) => {
+            if (ps.subjects?.name) subjectSet.add(ps.subjects.name)
+        })
+    })
 
     return (
         <div className="space-y-6">
@@ -91,7 +103,7 @@ export default function StudentDashboardView({ studentId, studentName }: Student
                 <Card className="hover:shadow-md transition-shadow border-t-4 border-t-blue-500">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-600">
-                            วิชาที่เรียนอยู่
+                            วิชาที่เรียนได้
                         </CardTitle>
                         <div className="p-2 rounded-lg bg-blue-50">
                             <CreditCard className="h-5 w-5 text-blue-600" />
@@ -99,7 +111,7 @@ export default function StudentDashboardView({ studentId, studentName }: Student
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-blue-600">
-                            {credits.length} <span className="text-sm font-normal text-gray-500">วิชา</span>
+                            {subjectSet.size} <span className="text-sm font-normal text-gray-500">วิชา</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -107,34 +119,52 @@ export default function StudentDashboardView({ studentId, studentName }: Student
 
             <Card>
                 <CardHeader>
-                    <CardTitle>เครดิตคงเหลือรายวิชา</CardTitle>
+                    <CardTitle>เครดิตคงเหลือ</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {credits.length === 0 ? (
                         <div className="text-center py-8">
-                            <p className="text-gray-500 mb-4">ยังไม่มีเครดิตรายวิชา</p>
+                            <p className="text-gray-500 mb-4">ยังไม่มีเครดิต</p>
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>วิชา</TableHead>
+                                    <TableHead>แพ็กเกจ</TableHead>
+                                    <TableHead>วิชาที่ใช้ได้</TableHead>
                                     <TableHead className="text-right">เครดิตคงเหลือ</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {credits.map((credit) => (
-                                    <TableRow key={credit.id}>
-                                        <TableCell className="font-medium">
-                                            {credit.subjects?.name || '-'}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <span className="text-lg font-bold text-primary">
-                                                {credit.credits_remaining}
-                                            </span>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {credits.map((credit) => {
+                                    const packageName = credit.purchases?.packages?.name || '-'
+                                    const packageSubjects = credit.purchases?.packages?.package_subjects || []
+                                    const subjectNames = packageSubjects
+                                        .map((ps: any) => ps.subjects?.name)
+                                        .filter(Boolean)
+
+                                    return (
+                                        <TableRow key={credit.id}>
+                                            <TableCell className="font-medium">
+                                                {packageName}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {subjectNames.map((name: string) => (
+                                                        <Badge key={name} variant="secondary" className="text-xs">
+                                                            {name}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <span className="text-lg font-bold text-primary">
+                                                    {credit.credits_remaining}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
                     )}

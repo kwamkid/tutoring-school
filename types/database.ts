@@ -11,6 +11,7 @@ export interface Subject {
     id: string
     name: string
     description: string | null
+    color: string | null
     created_at: string
 }
 
@@ -39,7 +40,7 @@ export interface Student {
 export interface CreditBalance {
     id: string
     student_id: string
-    subject_id: string
+    purchase_id: string
     credits_remaining: number
 }
 
@@ -60,6 +61,17 @@ export interface Attendance {
     credits_used: number
     checked_at: string
     notes: string | null
+    status: 'active' | 'cancelled'
+    purchase_id: string | null
+}
+
+export interface AttendanceLog {
+    id: string
+    attendance_id: string
+    action: 'check_in' | 'cancel'
+    performed_by: string
+    reason: string | null
+    created_at: string
 }
 
 // Extended types with relations
@@ -82,11 +94,11 @@ export interface AttendanceWithDetails extends Attendance {
     teacher?: Profile
 }
 
-export interface CreditBalanceWithSubject extends CreditBalance {
-    subject?: Subject
+export interface CreditBalanceWithPurchase extends CreditBalance {
+    purchase?: PurchaseWithDetails
 }
 
 export interface StudentWithProfile extends Student {
     profile?: Profile
-    credit_balances?: CreditBalanceWithSubject[]
+    credit_balances?: CreditBalanceWithPurchase[]
 }

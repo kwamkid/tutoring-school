@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import type { UserRole } from '@/types/database'
@@ -151,16 +151,20 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="role">ประเภทผู้ใช้</Label>
+                            <Label>ประเภทผู้ใช้</Label>
                             <Select
-                                id="role"
                                 value={formData.role}
-                                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                                onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}
                                 disabled={loading}
                             >
-                                <option value="student">นักเรียน/ผู้ปกครอง</option>
-                                <option value="teacher">ครู</option>
-                                <option value="admin">แอดมิน</option>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="student">นักเรียน/ผู้ปกครอง</SelectItem>
+                                    <SelectItem value="teacher">ครู</SelectItem>
+                                    <SelectItem value="admin">แอดมิน</SelectItem>
+                                </SelectContent>
                             </Select>
                         </div>
                         {formData.role === 'student' && (

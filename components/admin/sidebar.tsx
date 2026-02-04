@@ -12,7 +12,9 @@ import {
     BarChart3,
     Settings,
     LogOut,
-    UserCog
+    UserCog,
+    GraduationCap,
+    ClipboardCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -50,10 +52,22 @@ const routes = [
         color: 'text-rose-600',
     },
     {
+        label: 'เช็คชื่อ/ลงเวลา',
+        icon: ClipboardCheck,
+        href: '/admin/attendance',
+        color: 'text-teal-600',
+    },
+    {
         label: 'จัดการบิล',
         icon: FileText,
         href: '/admin/bills',
         color: 'text-emerald-500',
+    },
+    {
+        label: 'บุคลากร',
+        icon: Users, // Or Shield/GraduationCap if imported
+        href: '/admin/users',
+        color: 'text-purple-600',
     },
     {
         label: 'รายงาน',
@@ -75,42 +89,52 @@ export default function Sidebar() {
     }
 
     return (
-        <div className="space-y-4 py-4 flex flex-col h-full bg-white border-r">
-            <div className="px-3 py-2 flex-1">
-                <Link href="/admin" className="flex items-center pl-3 mb-14">
-                    <div className="relative w-8 h-8 mr-4">
-                        {/* Logo placeholder - using a simple circle for now */}
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-orange-400 flex items-center justify-center text-white font-bold">
+        <div
+            className="space-y-4 py-6 flex flex-col h-full"
+            style={{ background: 'linear-gradient(to bottom, #F0743E, #D4572A)' }}
+        >
+            <div className="px-4 py-2 flex-1">
+                <Link href="/admin" className="flex items-center pl-3 mb-10">
+                    <div className="relative w-10 h-10 mr-4">
+                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg">
                             TS
                         </div>
                     </div>
-                    <h1 className="text-xl font-bold text-primary">
+                    <h1 className="text-2xl font-bold text-white">
                         Tutoring School
                     </h1>
                 </Link>
-                <div className="space-y-1">
+                <div className="space-y-2 px-1">
                     {routes.map((route) => (
                         <Link
                             key={route.href}
                             href={route.href}
                             className={cn(
-                                "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-orange-50 rounded-lg transition",
-                                pathname === route.href ? "text-primary bg-orange-50" : "text-zinc-600"
+                                "text-base group flex p-3 px-4 w-full justify-start font-medium cursor-pointer rounded-xl transition-all duration-200",
+                                pathname === route.href
+                                    ? "bg-white shadow-md"
+                                    : "text-white/80 hover:bg-white/15 hover:text-white"
                             )}
+                            style={pathname === route.href ? { color: '#D4572A' } : undefined}
                         >
                             <div className="flex items-center flex-1">
-                                <route.icon className={cn("h-5 w-5 mr-3", route.color)} />
+                                <route.icon className={cn(
+                                    "h-5 w-5 mr-3",
+                                    pathname === route.href ? "" : "text-white/70"
+                                )}
+                                    style={pathname === route.href ? { color: '#F0743E' } : undefined}
+                                />
                                 {route.label}
                             </div>
                         </Link>
                     ))}
                 </div>
             </div>
-            <div className="px-3 py-2 border-t">
+            <div className="px-4 py-2">
                 <Button
                     onClick={handleLogout}
                     variant="ghost"
-                    className="w-full justify-start text-zinc-600 hover:text-red-500 hover:bg-red-50"
+                    className="w-full justify-start text-base text-white/70 hover:text-white hover:bg-white/15"
                 >
                     <LogOut className="h-5 w-5 mr-3" />
                     ออกจากระบบ
