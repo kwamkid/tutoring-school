@@ -94,12 +94,15 @@ export default function Sidebar() {
             style={{ background: 'linear-gradient(to bottom, #F0743E, #D4572A)' }}
         >
             <div className="px-4 py-2 flex-1">
-                <Link href="/admin" className="flex items-center pl-3 mb-10">
-                    <div className="relative w-10 h-10 mr-4">
-                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg">
-                            TS
-                        </div>
-                    </div>
+                <Link href="/admin" className="flex items-center pl-2 mb-10">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src="/logo.png"
+                        alt="Tutoring School"
+                        width={44}
+                        height={44}
+                        className="mr-3 drop-shadow-md"
+                    />
                     <h1 className="text-2xl font-bold text-white">
                         Tutoring School
                     </h1>

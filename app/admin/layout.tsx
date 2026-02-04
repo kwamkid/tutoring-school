@@ -18,7 +18,9 @@ export default function AdminLayout({
                 {/* Mobile Header */}
                 <div className="flex items-center p-4 md:hidden bg-white shadow-md sticky top-0 z-50">
                     <MobileSidebar />
-                    <div className="font-bold text-lg ml-4 text-primary">Tutoring School</div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo.png" alt="Logo" width={32} height={32} className="ml-3" />
+                    <div className="font-bold text-lg ml-2 text-primary">Tutoring School</div>
                 </div>
 
                 {/* Page Content */}
