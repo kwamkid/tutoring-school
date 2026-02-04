@@ -1,71 +1,81 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createClient } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl
+    // 1. สร้าง Supabase Client ผ่าน helper ที่เราเตรียมไว้ (จัดการเรื่อง Cookie ให้อัตโนมัติ)
+    const { supabase, response } = await createClient(request)
 
-    // Public routes
-    if (pathname === '/login' || pathname === '/register' || pathname === '/') {
-        return NextResponse.next()
-    }
-
-    let supabaseResponse = NextResponse.next({ request })
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll()
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value }) =>
-                        request.cookies.set(name, value)
-                    )
-                    supabaseResponse = NextResponse.next({ request })
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    )
-                },
-            },
-        }
-    )
-
+    // 2. ดึงข้อมูล User (แนะนำใช้ getUser() เพราะปลอดภัยกว่าบน Server/Middleware)
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Not authenticated
-    if (!user) {
-        return NextResponse.redirect(new URL('/login', request.url))
+    const { pathname } = request.nextUrl
+
+    // 3. กำหนดเส้นทางที่ไม่ต้องตรวจสอบสิทธิ์ (Public Routes)
+    const publicPaths = ['/login', '/register', '/']
+    const isPublicPath = publicPaths.includes(pathname)
+
+    // กรณีไม่มี User และพยายามเข้าหน้าอื่นที่ไม่ใช่ Public
+    if (!user && !isPublicPath) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
     }
 
-    // Get user role
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+    // 4. กรณีมี User แล้ว (ตรวจสอบ Role-based Access)
+    if (user) {
+        // ถ้าล็อกอินแล้วและพยายามจะไปหน้า Login/Register ให้เด้งไป Dashboard
+        if (isPublicPath && pathname !== '/') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/dashboard'
+            return NextResponse.redirect(url)
+        }
 
-    if (!profile) {
-        return NextResponse.redirect(new URL('/login', request.url))
+        // ดึงโปรไฟล์เพื่อเช็ค Role (ดึงจาก table 'profiles')
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile) {
+            // กรณีไม่มีโปรไฟล์ในระบบ (อาจจะเพิ่งสมัครแต่ DB พัง)
+            if (pathname !== '/login') {
+                const url = request.nextUrl.clone()
+                url.pathname = '/login'
+                return NextResponse.redirect(url)
+            }
+        } else {
+            const role = profile.role
+
+            // ป้องกันการเข้าหน้าข้าม Role
+            if (pathname.startsWith('/admin') && role !== 'admin') {
+                return NextResponse.redirect(new URL('/dashboard', request.url))
+            }
+            if (pathname.startsWith('/teacher') && role !== 'teacher' && role !== 'admin') {
+                return NextResponse.redirect(new URL('/dashboard', request.url))
+            }
+            if (pathname.startsWith('/parent') && role !== 'parent' && role !== 'admin') {
+                return NextResponse.redirect(new URL('/dashboard', request.url))
+            }
+            if (pathname.startsWith('/student') && role !== 'student' && role !== 'admin') {
+                return NextResponse.redirect(new URL('/dashboard', request.url))
+            }
+        }
     }
 
-    // Role-based access control
-    if (pathname.startsWith('/admin') && profile.role !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
-    if (pathname.startsWith('/teacher') && profile.role !== 'teacher' && profile.role !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
-    if (pathname.startsWith('/student') && profile.role !== 'student') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
-    return supabaseResponse
+    // สำคัญ: ต้องคืนค่า response ที่มาจาก createClient เพื่อให้ Cookie ถูกส่งกลับไปที่ Browser
+    return response
 }
 
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+    matcher: [
+        /*
+         * Match all request paths except for the ones starting with:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - public images/assets
+         */
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
 }
