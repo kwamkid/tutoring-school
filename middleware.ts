@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next()
     }
 
-    const supabase = await createClient()
+    const { supabase, response } = await createClient(request)
     const { data: { user } } = await supabase.auth.getUser()
 
     // Not authenticated
@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    return NextResponse.next()
+    return response
 }
 
 export const config = {
